@@ -516,24 +516,71 @@ export default function Home() {
               </p>
             ) : (
               <div className="space-y-3">
-                {[...players]
-                  .sort((a, b) => b.score - a.score)
-                  .map((player, index) => (
-                    <div
-                      key={player.id}
-                      className="flex items-center justify-between bg-gray-50 rounded-lg p-4 border border-gray-200"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center justify-center w-8 h-8 bg-indigo-600 text-white rounded-full font-bold">
-                          {index + 1}
+                {(() => {
+                  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+                  const lastIndex = sortedPlayers.length - 1;
+
+                  return sortedPlayers.map((player, index) => {
+                    const rank = index + 1;
+                    const isFirst = index === 0;
+                    const isSecond = index === 1;
+                    const isThird = index === 2;
+                    const isLast = sortedPlayers.length >= 2 && index === lastIndex;
+
+                    const rowClass = isFirst
+                      ? 'bg-gradient-to-r from-amber-100 via-yellow-50 to-amber-100 border-2 border-amber-400 shadow-lg'
+                      : isSecond
+                        ? 'bg-gradient-to-r from-slate-100 via-gray-50 to-slate-100 border-2 border-slate-400 shadow-md'
+                        : isThird
+                          ? 'bg-gradient-to-r from-orange-100 via-amber-50 to-orange-100 border-2 border-orange-400 shadow-md'
+                          : isLast
+                            ? 'bg-gradient-to-r from-gray-200 to-gray-100 border border-dashed border-gray-400 opacity-80'
+                            : 'bg-gray-50 border border-gray-200';
+
+                    const rankBadgeClass = isFirst
+                      ? 'bg-amber-500 text-white ring-2 ring-amber-300'
+                      : isSecond
+                        ? 'bg-slate-500 text-white ring-2 ring-slate-300'
+                        : isThird
+                          ? 'bg-orange-500 text-white ring-2 ring-orange-300'
+                          : isLast
+                            ? 'bg-gray-500 text-white'
+                            : 'bg-indigo-600 text-white';
+
+                    const scoreClass = isFirst
+                      ? 'text-amber-600'
+                      : isSecond
+                        ? 'text-slate-600'
+                        : isThird
+                          ? 'text-orange-600'
+                          : isLast
+                            ? 'text-gray-500'
+                            : 'text-indigo-600';
+
+                    return (
+                      <div
+                        key={player.id}
+                        className={`flex items-center justify-between rounded-lg p-4 transition ${rowClass}`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold ${rankBadgeClass}`}>
+                            {rank}
+                          </div>
+                          <div>
+                            <span className="font-bold text-gray-800">{player.name}</span>
+                            {isFirst && <p className="text-xs font-semibold text-amber-700">王者</p>}
+                            {isSecond && <p className="text-xs font-semibold text-slate-700">準優勝</p>}
+                            {isThird && <p className="text-xs font-semibold text-orange-700">3位</p>}
+                            {isLast && <p className="text-xs text-gray-500">ビリ</p>}
+                          </div>
                         </div>
-                        <span className="font-bold text-gray-800">{player.name}</span>
+                        <span className={`text-2xl font-bold ${scoreClass}`}>
+                          {player.score}
+                        </span>
                       </div>
-                      <span className="text-2xl font-bold text-indigo-600">
-                        {player.score}
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  });
+                })()}
               </div>
             )}
           </div>
