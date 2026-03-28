@@ -179,13 +179,13 @@ export default function Home() {
                 <form onSubmit={handleTransferScore} className="space-y-4">
                   {/* From Player */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-900 mb-2">
                       敗北者を選択
                     </label>
                     <select
                       value={selectedFromPlayer}
                       onChange={(e) => setSelectedFromPlayer(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full text-gray-900 px-4 py-2 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="">-- プレイヤーを選択 --</option>
                       {players.map((player) => (
@@ -198,13 +198,13 @@ export default function Home() {
 
                   {/* To Player */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-900 mb-2">
                       勝利者を選択
                     </label>
                     <select
                       value={selectedToPlayer}
                       onChange={(e) => setSelectedToPlayer(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full text-gray-900 px-4 py-2 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="">-- プレイヤーを選択 --</option>
                       {players.map((player) => (
@@ -217,7 +217,7 @@ export default function Home() {
 
                   {/* Points */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-900 mb-2">
                       移動ストック数
                     </label>
                     <input
@@ -226,7 +226,7 @@ export default function Home() {
                       onChange={(e) => setTransferPoints(e.target.value)}
                       placeholder="ストック数を入力"
                       min="1"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full text-gray-900 placeholder:text-gray-600 px-4 py-2 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
 
@@ -431,32 +431,32 @@ export default function Home() {
             {/* Date Range Selector */}
             <div className="mb-6 grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   開始日
                 </label>
                 <input
                   type="date"
                   value={summaryFromDate}
                   onChange={(e) => setSummaryFromDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-gray-900 px-4 py-2 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
                   終了日
                 </label>
                 <input
                   type="date"
                   value={summaryToDate}
                   onChange={(e) => setSummaryToDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full text-gray-900 px-4 py-2 border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
 
             {/* Summary Results */}
             {!summaryFromDate || !summaryToDate ? (
-              <p className="text-center text-gray-600">期間を選択してください</p>
+              <p className="text-center text-gray-800">期間を選択してください</p>
             ) : (() => {
               const fromDate = new Date(summaryFromDate);
               const toDate = new Date(summaryToDate);
@@ -499,7 +499,7 @@ export default function Home() {
               const sortedDates = Object.keys(summaryByDateAndPlayer).sort().reverse();
 
               return sortedDates.length === 0 ? (
-                <p className="text-center text-gray-600">この期間にはデータがありません</p>
+                <p className="text-center text-gray-800">この期間にはデータがありません</p>
               ) : (
                 <div className="space-y-6">
                   {sortedDates.map((date) => (
