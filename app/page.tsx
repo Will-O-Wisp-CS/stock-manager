@@ -6,7 +6,7 @@ import { useProjects, usePlayers, useScoreHistory, usePlayerHistory } from '@/li
 import { Player, Project } from '@/lib/types';
 
 export default function Home() {
-  const { projects, loading: projectsLoading, error: projectsError, addProject } = useProjects();
+  const { projects, loading: projectsLoading, error: projectsError, addProject, renameProject } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const selectedProject = projects.find((item) => item.id === selectedProjectId) as Project | undefined;
 
@@ -15,6 +15,8 @@ export default function Home() {
 
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newProjectName, setNewProjectName] = useState('');
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+  const [editingProjectName, setEditingProjectName] = useState('');
   const [selectedFromPlayer, setSelectedFromPlayer] = useState<string>('');
   const [selectedToPlayer, setSelectedToPlayer] = useState<string>('');
   const [transferPoints, setTransferPoints] = useState<string>('');
@@ -169,14 +171,68 @@ export default function Home() {
             ) : (
               <div className="space-y-3">
                 {projects.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setSelectedProjectId(item.id)}
-                    className="w-full text-left bg-gray-50 rounded-lg p-4 border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 transition"
-                  >
-                    <p className="font-bold text-gray-800">{item.name}</p>
-                    <p className="text-sm text-gray-600 mt-1">作成: {new Date(item.createdAt).toLocaleString('ja-JP')}</p>
-                  </button>
+                  <div key={item.id} className="bg-gray-50 rounded-lg border border-gray-200">
+                    {editingProjectId === item.id ? (
+                      <div className="p-4">
+                        <input
+                          type="text"
+                          value={editingProjectName}
+                          onChange={(e) => setEditingProjectName(e.target.value)}
+                          className="w-full px-3 py-2 border border-indigo-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 mb-2"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              if (editingProjectName.trim()) {
+                                renameProject(item.id, editingProjectName.trim());
+                              }
+                              setEditingProjectId(null);
+                            } else if (e.key === 'Escape') {
+                              setEditingProjectId(null);
+                            }
+                          }}
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              if (editingProjectName.trim()) {
+                                renameProject(item.id, editingProjectName.trim());
+                              }
+                              setEditingProjectId(null);
+                            }}
+                            className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
+                          >
+                            保存
+                          </button>
+                          <button
+                            onClick={() => setEditingProjectId(null)}
+                            className="px-4 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium"
+                          >
+                            キャンセル
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <button
+                          onClick={() => setSelectedProjectId(item.id)}
+                          className="flex-1 text-left p-4 hover:bg-indigo-50 rounded-l-lg transition"
+                        >
+                          <p className="font-bold text-gray-800">{item.name}</p>
+                          <p className="text-sm text-gray-600 mt-1">作成: {new Date(item.createdAt).toLocaleString('ja-JP')}</p>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingProjectId(item.id);
+                            setEditingProjectName(item.name);
+                          }}
+                          className="px-3 py-2 mr-2 text-gray-500 hover:text-indigo-600 transition text-sm"
+                          title="名前を変更"
+                        >
+                          ✏️
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}

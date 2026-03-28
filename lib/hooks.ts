@@ -58,7 +58,18 @@ export function useProjects() {
     }
   };
 
-  return { projects, loading, error, addProject };
+  const renameProject = async (projectId: string, newName: string) => {
+    try {
+      await updateDoc(doc(db, COLLECTIONS.PROJECTS, projectId), {
+        name: newName,
+        updatedAt: Timestamp.now(),
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to rename project');
+    }
+  };
+
+  return { projects, loading, error, addProject, renameProject };
 }
 
 export function usePlayers(projectId: string) {
