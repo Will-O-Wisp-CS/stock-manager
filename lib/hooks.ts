@@ -13,27 +13,27 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { Player, ScoreHistory, COLLECTIONS } from './types';
+import { Player, Project, ScoreHistory, COLLECTIONS } from './types';
 
-export function usePlayers() {
-  const [players, setPlayers] = useState<Player[]>([]);
+export function useProjects() {
+  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
-      const playersRef = collection(db, COLLECTIONS.PLAYERS);
-      const q = query(playersRef, orderBy('updatedAt', 'desc'));
+      const projectsRef = collection(db, COLLECTIONS.PROJECTS);
+      const q = query(projectsRef, orderBy('createdAt', 'asc'));
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const playersData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          createdAt: doc.data().createdAt?.toDate?.() || new Date(),
-          updatedAt: doc.data().updatedAt?.toDate?.() || new Date(),
-        })) as Player[];
+        const projectsData = snapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+          createdAt: item.data().createdAt?.toDate?.() || new Date(),
+          updatedAt: item.data().updatedAt?.toDate?.() || new Date(),
+        })) as Project[];
 
-        setPlayers(playersData);
+        setProjects(projectsData);
         setLoading(false);
       });
 
@@ -46,9 +46,67 @@ export function usePlayers() {
     }
   }, []);
 
-  const addPlayer = async (name: string) => {
+  const addProject = async (name: string) => {
+    try {
+      await addDoc(collection(db, COLLECTIONS.PROJECTS), {
+        name,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add project');
+    }
+  };
+
+  return { projects, loading, error, addProject };
+}
+
+export function usePlayers(projectId: string) {
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!projectId) {
+      setPlayers([]);
+      setTimeout(() => {
+        setLoading(false);
+      }, 0);
+      return;
+    }
+
+    try {
+      const playersRef = collection(db, COLLECTIONS.PLAYERS);
+      const q = query(playersRef, orderBy('updatedAt', 'desc'));
+
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const playersData = snapshot.docs
+          .map((item) => ({
+            id: item.id,
+            projectId: item.data().projectId || '',
+            ...item.data(),
+            createdAt: item.data().createdAt?.toDate?.() || new Date(),
+            updatedAt: item.data().updatedAt?.toDate?.() || new Date(),
+          }))
+          .filter((item) => item.projectId === projectId) as Player[];
+
+        setPlayers(playersData);
+        setLoading(false);
+      });
+
+      return () => unsubscribe();
+    } catch (err) {
+      setTimeout(() => {
+        setError(err instanceof Error ? err.message : 'An error occurred');
+        setLoading(false);
+      }, 0);
+    }
+  }, [projectId]);
+
+  const addPlayer = async (name: string, currentProjectId: string) => {
     try {
       await addDoc(collection(db, COLLECTIONS.PLAYERS), {
+        projectId: currentProjectId,
         name,
         score: 0,
         createdAt: Timestamp.now(),
@@ -59,12 +117,19 @@ export function usePlayers() {
     }
   };
 
-  const updatePlayerScore = async (playerId: string, oldScore: number, newScore: number, playerName: string) => {
+  const updatePlayerScore = async (
+    playerId: string,
+    oldScore: number,
+    newScore: number,
+    playerName: string,
+    currentProjectId: string
+  ) => {
     try {
       const difference = newScore - oldScore;
 
       // 履歴を記録
       await addDoc(collection(db, COLLECTIONS.SCORE_HISTORY), {
+        projectId: currentProjectId,
         playerId,
         playerName,
         oldScore,
@@ -88,22 +153,33 @@ export function usePlayers() {
   return { players, loading, error, addPlayer, updatePlayerScore };
 }
 
-export function useScoreHistory() {
+export function useScoreHistory(projectId: string) {
   const [history, setHistory] = useState<ScoreHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!projectId) {
+      setHistory([]);
+      setTimeout(() => {
+        setLoading(false);
+      }, 0);
+      return;
+    }
+
     try {
       const historyRef = collection(db, COLLECTIONS.SCORE_HISTORY);
       const q = query(historyRef, orderBy('timestamp', 'desc'));
 
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const historyData = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate?.() || new Date(),
-        })) as ScoreHistory[];
+        const historyData = snapshot.docs
+          .map((item) => ({
+            id: item.id,
+            projectId: item.data().projectId || '',
+            ...item.data(),
+            timestamp: item.data().timestamp?.toDate?.() || new Date(),
+          }))
+          .filter((item) => item.projectId === projectId) as ScoreHistory[];
 
         setHistory(historyData);
         setLoading(false);
@@ -116,7 +192,7 @@ export function useScoreHistory() {
         setLoading(false);
       }, 0);
     }
-  }, []);
+  }, [projectId]);
 
   const recordTransfer = async (
     fromPlayerId: string,
@@ -124,11 +200,13 @@ export function useScoreHistory() {
     toPlayerId: string,
     toPlayerName: string,
     points: number,
+    currentProjectId: string,
     note?: string
   ) => {
     try {
       // スコア履歴を記録
       await addDoc(collection(db, COLLECTIONS.SCORE_HISTORY), {
+        projectId: currentProjectId,
         fromPlayerId,
         fromPlayerName,
         toPlayerId,
@@ -165,13 +243,14 @@ export function useScoreHistory() {
   return { history, loading, error, recordTransfer };
 }
 
-export function usePlayerHistory(playerId: string) {
+export function usePlayerHistory(playerId: string, projectId: string) {
   const [playerHistory, setPlayerHistory] = useState<ScoreHistory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!playerId) {
+    if (!playerId || !projectId) {
+      setPlayerHistory([]);
       setTimeout(() => {
         setLoading(false);
       }, 0);
@@ -188,6 +267,7 @@ export function usePlayerHistory(playerId: string) {
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const allHistoryData = snapshot.docs.map((doc) => ({
           id: doc.id,
+          projectId: doc.data().projectId || '',
           ...doc.data(),
           timestamp: doc.data().timestamp?.toDate?.() || new Date(),
         })) as ScoreHistory[];
@@ -195,9 +275,12 @@ export function usePlayerHistory(playerId: string) {
         // プレイヤーに関連する履歴をフィルタ
         const filtered = allHistoryData.filter(
           (item) =>
-            item.playerId === playerId ||
-            item.fromPlayerId === playerId ||
-            item.toPlayerId === playerId
+            item.projectId === projectId &&
+            (
+              item.playerId === playerId ||
+              item.fromPlayerId === playerId ||
+              item.toPlayerId === playerId
+            )
         );
 
         setPlayerHistory(filtered);
@@ -211,7 +294,7 @@ export function usePlayerHistory(playerId: string) {
         setLoading(false);
       }, 0);
     }
-  }, [playerId]);
+  }, [playerId, projectId]);
 
   return { playerHistory, loading, error };
 }

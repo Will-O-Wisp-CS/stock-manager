@@ -1,15 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import HistoryViewer from '@/components/HistoryViewer';
-import { usePlayers, useScoreHistory, usePlayerHistory } from '@/lib/hooks';
-import { Player } from '@/lib/types';
+import { useProjects, usePlayers, useScoreHistory, usePlayerHistory } from '@/lib/hooks';
+import { Player, Project } from '@/lib/types';
 
 export default function Home() {
-  const { players, loading: playersLoading, error: playersError, addPlayer, updatePlayerScore } = usePlayers();
-  const { history, loading: historyLoading, error: historyError, recordTransfer } = useScoreHistory();
+  const { projects, loading: projectsLoading, error: projectsError, addProject } = useProjects();
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const selectedProject = projects.find((item) => item.id === selectedProjectId) as Project | undefined;
+
+  const { players, loading: playersLoading, error: playersError, addPlayer, updatePlayerScore } = usePlayers(selectedProjectId);
+  const { history, loading: historyLoading, error: historyError, recordTransfer } = useScoreHistory(selectedProjectId);
 
   const [newPlayerName, setNewPlayerName] = useState('');
+  const [newProjectName, setNewProjectName] = useState('');
   const [selectedFromPlayer, setSelectedFromPlayer] = useState<string>('');
   const [selectedToPlayer, setSelectedToPlayer] = useState<string>('');
   const [transferPoints, setTransferPoints] = useState<string>('');
@@ -26,12 +31,43 @@ export default function Home() {
   
   // 履歴表示用
   const [selectedForHistory, setSelectedForHistory] = useState<Player | null>(null);
-  const { playerHistory } = usePlayerHistory(selectedForHistory?.id || '');
+  const { playerHistory } = usePlayerHistory(selectedForHistory?.id || '', selectedProjectId);
+
+  useEffect(() => {
+    const storedProjectId = localStorage.getItem('selectedProjectId') || '';
+    if (storedProjectId && projects.some((item) => item.id === storedProjectId)) {
+      setSelectedProjectId(storedProjectId);
+    }
+  }, [projects]);
+
+  useEffect(() => {
+    if (selectedProjectId) {
+      localStorage.setItem('selectedProjectId', selectedProjectId);
+    }
+  }, [selectedProjectId]);
+
+  useEffect(() => {
+    setActiveTab('players');
+    setSelectedFromPlayer('');
+    setSelectedToPlayer('');
+    setTransferPoints('');
+    setSelectedForHistory(null);
+    setEditingPlayerId(null);
+  }, [selectedProjectId]);
+
+  const handleAddProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProjectName.trim()) {
+      return;
+    }
+    await addProject(newProjectName.trim());
+    setNewProjectName('');
+  };
 
   const handleAddPlayer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPlayerName.trim()) {
-      await addPlayer(newPlayerName);
+    if (newPlayerName.trim() && selectedProjectId) {
+      await addPlayer(newPlayerName, selectedProjectId);
       setNewPlayerName('');
     }
   };
@@ -69,7 +105,8 @@ export default function Home() {
         fromPlayer.name,
         toPlayer.id,
         toPlayer.name,
-        points
+        points,
+        selectedProjectId
       );
       setSelectedFromPlayer('');
       setSelectedToPlayer('');
@@ -99,7 +136,7 @@ export default function Home() {
     if (!player) return;
 
     try {
-      await updatePlayerScore(editingPlayerId, player.score, newScore, player.name);
+      await updatePlayerScore(editingPlayerId, player.score, newScore, player.name, selectedProjectId);
       setEditingPlayerId(null);
       setEditingScoreValue('');
     } catch (err) {
@@ -112,15 +149,82 @@ export default function Home() {
     setEditingScoreValue('');
   };
 
+  if (!selectedProjectId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="max-w-2xl mx-auto p-4 sm:p-6 mobile-contrast">
+          <div className="mb-8">
+            <h1 className="text-4xl font-bold text-gray-800 mb-2">プロジェクト選択</h1>
+            <p className="text-gray-600">参加するプロジェクトを選ぶか、新しく作成してください。</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">プロジェクト一覧</h2>
+            {projectsLoading ? (
+              <p className="text-center text-gray-600">読み込み中...</p>
+            ) : projectsError ? (
+              <p className="text-center text-red-600">エラー: {projectsError}</p>
+            ) : projects.length === 0 ? (
+              <p className="text-center text-gray-600">プロジェクトがありません。下から追加してください。</p>
+            ) : (
+              <div className="space-y-3">
+                {projects.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelectedProjectId(item.id)}
+                    className="w-full text-left bg-gray-50 rounded-lg p-4 border border-gray-200 hover:bg-indigo-50 hover:border-indigo-300 transition"
+                  >
+                    <p className="font-bold text-gray-800">{item.name}</p>
+                    <p className="text-sm text-gray-600 mt-1">作成: {new Date(item.createdAt).toLocaleString('ja-JP')}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">プロジェクトを追加</h2>
+            <form onSubmit={handleAddProject} className="flex gap-2">
+              <input
+                type="text"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                placeholder="プロジェクト名を入力"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                type="submit"
+                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
+              >
+                追加
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="max-w-2xl mx-auto p-4 sm:p-6">
+      <div className="max-w-2xl mx-auto p-4 sm:p-6 mobile-contrast">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
             ストック管理
           </h1>
           <p className="text-gray-600">ストックを管理します。1ストックあたり500。</p>
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <div className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-semibold">
+              プロジェクト: {selectedProject?.name || '未選択'}
+            </div>
+            <button
+              onClick={() => setSelectedProjectId('')}
+              className="px-3 py-1 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm"
+            >
+              プロジェクト選択へ
+            </button>
+          </div>
         </div>
 
         {/* Tabs */}

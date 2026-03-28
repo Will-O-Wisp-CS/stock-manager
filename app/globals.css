@@ -22,5 +22,38 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  color-scheme: light;
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.mobile-contrast label {
+  color: #111827;
+}
+
+.mobile-contrast select,
+.mobile-contrast input[type="date"],
+.mobile-contrast input[type="number"],
+.mobile-contrast input[type="text"] {
+  color: #111827 !important;
+  -webkit-text-fill-color: #111827;
+  border-color: #9ca3af;
+}
+
+.mobile-contrast select option {
+  color: #111827;
+  background: #ffffff;
+}
+
+.mobile-contrast input::placeholder {
+  color: #4b5563;
+  opacity: 1;
+}
+
+.mobile-contrast input[type="date"]::-webkit-datetime-edit,
+.mobile-contrast input[type="date"]::-webkit-datetime-edit-text,
+.mobile-contrast input[type="date"]::-webkit-datetime-edit-month-field,
+.mobile-contrast input[type="date"]::-webkit-datetime-edit-day-field,
+.mobile-contrast input[type="date"]::-webkit-datetime-edit-year-field {
+  color: #111827;
+  -webkit-text-fill-color: #111827;
 }
